@@ -109,7 +109,7 @@ __error_no_docker_found() {
 }
 
 
-start () {
+start() {
 
     usage() {
 
@@ -165,6 +165,9 @@ start () {
         IS_DOCKER_UP=$(docker ps | grep "${OSRM_DOCKER_NAME}")
         if [ "${IS_DOCKER_UP}" == "" ]; then
             docker start "${OSRM_DOCKER_ID}"
+        else
+            echo "${OSRM_DOCKER_NAME} is already up and running with ID=${OSRM_DOCKER_ID:0:12}."
+            echo "You may want to proceed further."
         fi
         exit 0
     else
@@ -219,10 +222,11 @@ clean_data() {
 
     }
 
-    shift 
+    shift
 
-    if [ ! -v ${OSRM_DATA_DIR} ] || [ "${OSRM_DATA_DIR}" == "" ]; then
-        rm -r ${OSRM_DATA_DIR}/{*,.*}
+    if [ -v OSRM_DATA_DIR ] && [ "${OSRM_DATA_DIR}" != "" ]; then
+        rm -r ${OSRM_DATA_DIR}
+        mkdir -p ${OSRM_DATA_DIR}
     fi
 
     exit 0
@@ -407,7 +411,7 @@ routed() {
         exit 1
     fi
 
-    PARSED_ARGUMENTS=$(getopt -a -n extract -o a: --long algorithm: -- "$@")
+    PARSED_ARGUMENTS=$(getopt -a -n routed -o a: --long algorithm: -- "$@")
     VALID_ARGUMENTS=$?
     if [ "${VALID_ARGUMENTS}" != "0" ]; then
         usage
