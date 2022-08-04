@@ -129,7 +129,9 @@ start() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     PARSED_ARGUMENTS=$(getopt -a -n start -o p: --long port: -- "$@")
     VALID_ARGUMENTS=$?
@@ -194,7 +196,9 @@ stop() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -222,11 +226,12 @@ clean_data() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     if [ -v OSRM_DATA_DIR ] && [ "${OSRM_DATA_DIR}" != "" ]; then
-        rm -r ${OSRM_DATA_DIR}
-        mkdir -p ${OSRM_DATA_DIR}
+        rm -r ${OSRM_DATA_DIR}/*
     fi
 
     exit 0
@@ -252,7 +257,9 @@ extract() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -321,7 +328,9 @@ partition() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -330,6 +339,7 @@ partition() {
     fi
 
     OSRM_FULL_FILE_NAME=$1
+    echo ${OSRM_FULL_FILE_NAME}
     if [ "${OSRM_FULL_FILE_NAME#*.}" != "osrm" ]; then
         echo "Error: Invalid file provided."
         echo "Please provide a *.osrm file"
@@ -338,7 +348,7 @@ partition() {
     fi
 
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-partition \
-        /data/${OSM_FULL_FILE_NAME}
+        /data/${OSRM_FULL_FILE_NAME}
 
     exit 0
 
@@ -358,7 +368,9 @@ customize() {
 
     }
 
-    shift
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -378,6 +390,87 @@ customize() {
         /data/${OSM_FULL_FILE_NAME}
 
     exit 0
+
+}
+
+
+preprocess() {
+
+    usage() {
+
+        echo "Usage: osrm_backend preprocess [OPTION]... [FILE].osm.pbf
+              This function preprocess *.osm.pbf files in the following steps:
+              1. Extraction and conversion of *.osm.pbf file into *.osrm files using
+                 'osrm_backend extract'
+              2. Get partitions in *.osrm files using 'osrm_backend partition'
+              3. Customize *.osrm files 'osrm_backend customize' 
+
+              Mandatory arguments to long options are mandatory for short options too.
+              -v, --vehicle              The name of the vehicle to be used. currently
+                                         the vehicles which are supported are car, foot 
+                                         and bicycle. if vehicle type is not provided, 
+                                         the car is used.
+
+            Exit status:
+              0  if OK,
+              1  if any error occured"
+
+    }
+
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
+
+    RUN_MODE="INDIRECT"
+
+    __get_osrm_docker_id
+    if [ "${OSRM_DOCKER_ID}" == "" ]; then
+        __error_no_docker_found
+        exit 1
+    fi
+
+    OSM_FULL_FILE_NAME=$1
+
+    if [ "${OSM_FULL_FILE_NAME#*.}" != "osm.pbf" ]; then
+        echo "Error: Invalid file provided."
+        echo "Please provide a *.osm.pbf file"
+        usage
+        exit 1
+    fi
+    FILE_NAME="${OSM_FULL_FILE_NAME%%.*}"
+
+    PARSED_ARGUMENTS=$(getopt -a -n extract -o v: --long vehicle: -- "$@")
+    VALID_ARGUMENTS=$?
+    if [ "${VALID_ARGUMENTS}" != "0" ]; then
+        usage
+        exit 1
+    fi
+
+    VEHICLE_TYPE="car"
+
+    eval set -- "${PARSED_ARGUMENTS}"
+    while :
+    do
+        case "${1}" in
+            -v | --vehicle)
+                VEHICLE_TYPE="${2}"
+                shift 2
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                echo "Error: Invalid argument is passed to function."
+                usage
+                exit 1
+                ;;
+        esac
+    done
+
+    extract -v "${VEHICLE_TYPE}" "${FILE_NAME}.osm.pbf"
+    partition "${FILE_NAME}.osrm"
+    customize "${FILE_NAME}.osrm"
 
 }
 
@@ -403,7 +496,7 @@ routed() {
 
     }
 
-    shift
+    __shift_params
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -484,6 +577,7 @@ else
     fi
 fi
 OSRM_DOCKER_NAME="osrm/osrm-backend"
+RUN_MODE="DIRECT"
 
 
 if [ $# -gt "0" ]; then
@@ -505,6 +599,9 @@ if [ $# -gt "0" ]; then
             ;;
         "customize")
             customize $@
+            ;;
+        "preprocess")
+            preprocess $@
             ;;
         "routed")
             routed $@
