@@ -387,7 +387,7 @@ customize() {
     fi
 
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-customize \
-        /data/${OSM_FULL_FILE_NAME}
+        /data/${OSRM_FULL_FILE_NAME}
 
     exit 0
 
@@ -496,7 +496,9 @@ routed() {
 
     }
 
-    __shift_params
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        shift
+    fi
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" == "" ]; then
@@ -555,7 +557,7 @@ routed() {
 
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-routed \
         --algorithm ${ROUTING_ALGORITHM}\
-        /data/${OSM_FULL_FILE_NAME}
+        /data/${OSRM_FULL_FILE_NAME}
 
     exit 0
 
