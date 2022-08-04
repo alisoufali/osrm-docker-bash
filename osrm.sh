@@ -221,7 +221,9 @@ clean_data() {
 
     shift 
 
-    rm -rf ${OSRM_DATA_DIR}/{*,.*}
+    if [ ! -v ${OSRM_DATA_DIR} ] || [ "${OSRM_DATA_DIR}" == "" ]; then
+        rm -r ${OSRM_DATA_DIR}/{*,.*}
+    fi
 
     exit 0
 }
@@ -463,9 +465,10 @@ routed() {
 }
 
 
-if [ ! -v OSRM_HOME_DIR ]; then
+if [ ! -v OSRM_HOME_DIR ] || [ "${OSRM_HOME_DIR}" == "" ]; then
     echo "Error: OSRM_HOME_DIR environment variable is not defined."
     echo "Please define this variable and try again"
+    exit 1
 else
     OSRM_DATA_DIR="${OSRM_HOME_DIR}/data"
     OSRM_CONFIG_FILE="${OSRM_HOME_DIR}/osrm.config"
