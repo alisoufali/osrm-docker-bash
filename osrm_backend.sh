@@ -113,7 +113,7 @@ start () {
 
     usage() {
 
-        echo "Usage: osrm start
+        echo "Usage: osrm_backend start
               Checks if osrm/osrm-backend docker has not started yet and if not, it starts 
               the docker and stores it's id as an environment variable.
 
@@ -181,7 +181,7 @@ stop() {
 
     usage() {
 
-        echo "Usage: osrm stop
+        echo "Usage: osrm_backend stop
               Checks if ${OSRM_DOCKER_NAME} docker has started and if so, it stops 
               the docker.
 
@@ -210,7 +210,7 @@ clean_data() {
 
     usage() {
 
-        echo "Usage: osrm clean_data
+        echo "Usage: osrm_backend clean_data
               Removes all files inside the osrm data directory. 
 
             Exit status:
@@ -233,7 +233,7 @@ extract() {
 
     usage() {
 
-        echo "Usage: osrm extract [OPTION]... [FILE].osm.pbf
+        echo "Usage: osrm_backend extract [OPTION]... [FILE].osm.pbf
               Extract and convert *.osm.pbf file into *.osrm files. 
 
               Mandatory arguments to long options are mandatory for short options too.
@@ -308,7 +308,7 @@ partition() {
 
     usage() {
 
-        echo "Usage: osrm partition [FILE].osrm
+        echo "Usage: osrm_backend partition [FILE].osrm
               Parition *.osrm files. 
 
             Exit status:
@@ -345,7 +345,7 @@ customize() {
 
     usage() {
 
-        echo "Usage: osrm customize [FILE].osrm
+        echo "Usage: osrm_backend customize [FILE].osrm
               Customize *.osrm files. 
 
             Exit status:
@@ -382,7 +382,7 @@ routed() {
 
     usage() {
 
-        echo "Usage: osrm routed [FILE].osrm
+        echo "Usage: osrm_backend routed [FILE].osrm
               Run a routing engine based on given map data (*.osrm files).
 
               Mandatory arguments to long options are mandatory for short options too.
