@@ -20,6 +20,8 @@ __update_file() {
     SOURCE_FILE=$1
     DESTINATION_FILE=$2
 
+    echo "Updating ${DESTINATION_FILE} with ${SOURCE_FILE}."
+
     if [ ! -f ${SOURCE_FILE} ]; then
         echo "Error: SOURCE_FILE:${SOURCE_FILE} does not exist."
         usage
@@ -27,13 +29,19 @@ __update_file() {
     fi
 
     if [ ! -f ${DESTINATION_FILE} ]; then
+        echo "${DESTINATION_FILE} does not exist. Just doing a normal copy ..."
         cp --force ${SOURCE_FILE} ${DESTINATION_FILE}
+        echo "Done"
         return 0
     else
+        echo "${DESTINATION_FILE} exists. Checking for replacement ..."
         if [ ${SOURCE_FILE} -nt ${DESTINATION_FILE} ]; then
+            echo "${DESTINATION_FILE} is older than ${SOURCE_FILE}. Just doing a replacement."
             cp --update --force ${SOURCE_FILE} ${DESTINATION_FILE}
+            echo "Done."
             return 2
         else
+            echo "${DESTINATION_FILE} and ${SOURCE_FILE} are the same. No replacement occured."
             return 3
         fi
     fi
@@ -57,10 +65,15 @@ __update_directory() {
 
     DIRECTORY=$1
 
+    echo "Creating ${DIRECTORY}. Checking if it exists ..."
+
     if [ ! -d ${DIRECTORY} ]; then
+        echo "${DIRECTORY} does not exist. Creating ${DIRECTORY} ... "
         mkdir -p ${DIRECTORY}
+        echo "Done."
         return 0
     else
+        echo "${DIRECTORY} exists. There is no need for creation."
         return 1
     fi
 
@@ -80,12 +93,16 @@ __get_osrm_docker_id() {
 
     }
 
+    echo "Getting OSRM-BACKEND Docker ID. Checking ${OSRM_CONFIG_FILE} for OSRM-BACKEND Docker ID ..."
+
     PATTERN_LINE=$(grep "OSRM_DOCKER_ID" ${OSRM_CONFIG_FILE})
 
     if [ "${PATTERN_LINE}" == "" ]; then
         OSRM_DOCKER_ID=""
+        echo "Could not find OSRM-BACKEND Docker ID."
     else
         OSRM_DOCKER_ID="${PATTERN_LINE:15}"
+        echo "OSRM-BACKEND Docker ID found. It is ${OSRM_DOCKER_ID}"
     fi
 
     return 0
@@ -129,6 +146,8 @@ start() {
 
     }
 
+    echo "Starting OSRM-BACKEND container."
+
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
     fi
@@ -164,18 +183,27 @@ start() {
 
     __get_osrm_docker_id
     if [ "${OSRM_DOCKER_ID}" != "" ]; then
+        echo "Checking if OSRM-BACKEND container with ID = ${OSRM_DOCKER_ID:0:12} is up and running ..."
         IS_DOCKER_UP=$(docker ps | grep "${OSRM_DOCKER_NAME}")
         if [ "${IS_DOCKER_UP}" == "" ]; then
+            echo "OSRM-BACKEND container is not running. Starting it up ..."
             docker start "${OSRM_DOCKER_ID}"
+            echo "Done."
         else
-            echo "${OSRM_DOCKER_NAME} is already up and running with ID=${OSRM_DOCKER_ID:0:12}."
+            echo "${OSRM_DOCKER_NAME} is already up and running with ID = ${OSRM_DOCKER_ID:0:12}."
             echo "You may want to proceed further."
         fi
         exit 0
     else
+        echo "Creating OSRM-BACKEND container on local host port = ${OSRM_PORT}"
         OSRM_DOCKER_ID=$(docker create -t -p ${OSRM_PORT}:5000 -v "${OSRM_DATA_DIR}:/data" ${OSRM_DOCKER_NAME} sh)
+        echo "Done."
+        echo "Writting OSRM_DOCKER_ID in ${OSRM_CONFIG_FILE} ..."
         echo "OSRM_DOCKER_ID=${OSRM_DOCKER_ID}" >> ${OSRM_CONFIG_FILE}
+        echo "Done."
+        echo "Starting OSRM-BACKEND container ..."
         docker start "${OSRM_DOCKER_ID}"
+        echo "Done."
         exit 0
     fi
 
@@ -196,6 +224,8 @@ stop() {
 
     }
 
+    echo "Stopping OSRM-BACKEND container."
+
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
     fi
@@ -206,7 +236,9 @@ stop() {
         exit 1
     fi
     
+    echo "Stopping OSRM-BACKEND container ..."
     docker stop "${OSRM_DOCKER_ID}"
+    echo "Done."
 
     exit 0
 
