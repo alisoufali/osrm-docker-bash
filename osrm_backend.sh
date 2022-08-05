@@ -483,12 +483,25 @@ routed() {
               Run a routing engine based on given map data (*.osrm files).
 
               Mandatory arguments to long options are mandatory for short options too.
-              -a, --algorithm            The routing algorithm to be used for route creation.
-                                         Currently two algorithms are supported:
-                                         * Contraction Hierarchies (ch)
-                                         * Multi-Level Dijkstra (mld)
-                                         The possible values of algorithm are (ch|mld)
-                                         Default algorithm is the mld.
+              -a, --algorithm             The routing algorithm to be used for route creation.
+                                          Currently two algorithms are supported:
+                                          * Contraction Hierarchies (ch)
+                                          * Multi-Level Dijkstra (mld)
+                                          The possible values of algorithm are (ch|mld)
+                                          Default algorithm is the mld.
+              --max-alternatives          Maximum alternative routes the program will check for
+                                          each pair of coordinates. The default value is 3000
+              --max-matching-size         Maximum value of matching size. The default value is 
+                                          100000
+              --max-nearest-size          Maximum value of nearest size. The default value is
+                                          100000
+              --max-table-size            Maximum value of table size. The default value is
+                                          100000
+              --max-trip-size             Maximum value of trip size. The default value is
+                                          100000
+              --max-viaroute-size         Maximum value of viaroute size. The default value is
+                                          100000
+              
 
             Exit status:
               0  if OK,
@@ -506,7 +519,7 @@ routed() {
         exit 1
     fi
 
-    PARSED_ARGUMENTS=$(getopt -a -n routed -o a: --long algorithm: -- "$@")
+    PARSED_ARGUMENTS=$(getopt -a -n routed -o a: --long algorithm:,max-alternatives:,max-matching-size:,--max-nearest-size:,--max-table-size:,--max-trip-size:--max-viaroute-size -- "$@")
     VALID_ARGUMENTS=$?
     if [ "${VALID_ARGUMENTS}" != "0" ]; then
         usage
@@ -514,6 +527,12 @@ routed() {
     fi
 
     ROUTING_ALGORITHM="mld"
+    MAX_ALTERNATIVES="3000"
+    MAX_MATCHING_SIZE="100000"
+    MAX_NEAREST_SIZE="100000"
+    MAX_TABLE_SIZE="100000"
+    MAX_TRIP_SIZE="100000"
+    MAX_VIAROUTE_SIZE="100000"
 
     eval set -- "${PARSED_ARGUMENTS}"
     while :
@@ -533,6 +552,30 @@ routed() {
                         exit 1
                         ;;
                 esac
+                shift 2
+                ;;
+            --max-alternatives)
+                MAX_ALTERNATIVES="${2}"
+                shift 2
+                ;;
+            --max-matching-size)
+                MAX_MATCHING_SIZE="${2}"
+                shift 2
+                ;;
+            --max-nearest-size)
+                MAX_NEAREST_SIZE="${2}"
+                shift 2
+                ;;
+            --max-table-size)
+                MAX_TABLE_SIZE="${2}"
+                shift 2
+                ;;
+            --max-trip-size)
+                MAX_TRIP_SIZE="${2}"
+                shift 2
+                ;;
+            --max-viaroute-size)
+                MAX_VIAROUTE_SIZE="${2}"
                 shift 2
                 ;;
             --)
@@ -556,6 +599,12 @@ routed() {
     fi
 
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-routed \
+        --max-alternatives ${MAX_ALTERNATIVES} \
+        --max-matching-size ${MAX_MATCHING_SIZE} \
+        --max-nearest-size ${MAX_NEAREST_SIZE} \
+        --max-table-size ${MAX_TABLE_SIZE} \
+        --max-trip-size ${MAX_TRIP_SIZE} \
+        --max-viaroute-size ${MAX_VIAROUTE_SIZE} \
         --algorithm ${ROUTING_ALGORITHM}\
         /data/${OSRM_FULL_FILE_NAME}
 
@@ -588,7 +637,7 @@ if [ $# -gt "0" ]; then
             start $@
             ;;
         "stop")
-            start $@
+            stop $@
             ;;
         "clean_data")
             clean_data $@
