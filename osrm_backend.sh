@@ -80,12 +80,12 @@ __update_directory() {
 }
 
 
-__get_osrm_docker_id() {
+__get_osrm_container_id() {
 
     usage() {
 
-        echo "Usage: __get_osrm_docker_id
-              Check if OSRM_DOCKER_ID is defined in OSRM_CONFIG_FILE and if so it gets it.
+        echo "Usage: __get_osrm_container_id
+              Check if OSRM_CONTAINER_ID is defined in OSRM_CONFIG_FILE and if so it gets it.
 
               Exit status:
                 0  if OK,
@@ -93,16 +93,16 @@ __get_osrm_docker_id() {
 
     }
 
-    echo "Getting OSRM-BACKEND Docker ID. Checking ${OSRM_CONFIG_FILE} for OSRM-BACKEND Docker ID ..."
+    echo "Getting OSRM-BACKEND container ID. Checking ${OSRM_CONFIG_FILE} for OSRM-BACKEND container ID ..."
 
-    PATTERN_LINE=$(grep "OSRM_DOCKER_ID" ${OSRM_CONFIG_FILE})
+    PATTERN_LINE=$(grep "OSRM_CONTAINER_ID" ${OSRM_CONFIG_FILE})
 
     if [ "${PATTERN_LINE}" == "" ]; then
-        OSRM_DOCKER_ID=""
-        echo "Could not find OSRM-BACKEND Docker ID."
+        OSRM_CONTAINER_ID=""
+        echo "Could not find OSRM-BACKEND container ID."
     else
-        OSRM_DOCKER_ID="${PATTERN_LINE:15}"
-        echo "OSRM-BACKEND Docker ID found. It is ${OSRM_DOCKER_ID}"
+        OSRM_CONTAINER_ID="${PATTERN_LINE:18}"
+        echo "OSRM-BACKEND container ID found. It is ${OSRM_CONTAINER_ID}"
     fi
 
     return 0
@@ -110,17 +110,17 @@ __get_osrm_docker_id() {
 }
 
 
-__error_no_docker_found() {
+__error_no_container_found() {
 
     usage() {
 
-        echo "Usage: __error_no_docker_found
+        echo "Usage: __error_no_container_found
               Raises error because docker id is not available in OSRM_CONFIG_FILE."
 
     }
 
-    echo "Error: There is no osrm docker available to work with"
-    echo "Please start osrm docker first by executing command:"
+    echo "Error: There is no OSRM-BACKEND container available to work with"
+    echo "Please start OSRM-BACKEND container first by executing command:"
     echo "      osrm start"
 
 }
@@ -131,8 +131,8 @@ start() {
     usage() {
 
         echo "Usage: osrm_backend start
-              Checks if osrm/osrm-backend docker has not started yet and if not, it starts 
-              the docker and stores it's id as an environment variable.
+              Checks if OSRM-BACKEND container has not started yet and if not, it starts 
+              the container and stores it's id as an environment variable.
 
               Mandatory arguments to long options are mandatory for short options too.
               -p, --port                 The port of the local host to be mapped into port
@@ -181,28 +181,28 @@ start() {
         esac
     done
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" != "" ]; then
-        echo "Checking if OSRM-BACKEND container with ID = ${OSRM_DOCKER_ID:0:12} is up and running ..."
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" != "" ]; then
+        echo "Checking if OSRM-BACKEND container with ID = ${OSRM_CONTAINER_ID:0:12} is up and running ..."
         IS_DOCKER_UP=$(docker ps | grep "${OSRM_DOCKER_NAME}")
         if [ "${IS_DOCKER_UP}" == "" ]; then
             echo "OSRM-BACKEND container is not running. Starting it up ..."
-            docker start "${OSRM_DOCKER_ID}"
+            docker start "${OSRM_CONTAINER_ID}"
             echo "Done."
         else
-            echo "${OSRM_DOCKER_NAME} is already up and running with ID = ${OSRM_DOCKER_ID:0:12}."
+            echo "${OSRM_DOCKER_NAME} is already up and running with ID = ${OSRM_CONTAINER_ID:0:12}."
             echo "You may want to proceed further."
         fi
         exit 0
     else
         echo "Creating OSRM-BACKEND container on local host port = ${OSRM_PORT}"
-        OSRM_DOCKER_ID=$(docker create -t -p ${OSRM_PORT}:5000 -v "${OSRM_DATA_DIR}:/data" ${OSRM_DOCKER_NAME} sh)
+        OSRM_CONTAINER_ID=$(docker create -t -p ${OSRM_PORT}:5000 -v "${OSRM_DATA_DIR}:/data" ${OSRM_DOCKER_NAME} sh)
         echo "Done."
-        echo "Writting OSRM_DOCKER_ID in ${OSRM_CONFIG_FILE} ..."
-        echo "OSRM_DOCKER_ID=${OSRM_DOCKER_ID}" >> ${OSRM_CONFIG_FILE}
+        echo "Writting OSRM_CONTAINER_ID in ${OSRM_CONFIG_FILE} ..."
+        echo "OSRM_CONTAINER_ID=${OSRM_CONTAINER_ID}" >> ${OSRM_CONFIG_FILE}
         echo "Done."
         echo "Starting OSRM-BACKEND container ..."
-        docker start "${OSRM_DOCKER_ID}"
+        docker start "${OSRM_CONTAINER_ID}"
         echo "Done."
         exit 0
     fi
@@ -230,14 +230,14 @@ stop() {
         shift
     fi
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
     
     echo "Stopping OSRM-BACKEND container ..."
-    docker stop "${OSRM_DOCKER_ID}"
+    docker stop "${OSRM_CONTAINER_ID}"
     echo "Done."
 
     exit 0
@@ -299,9 +299,9 @@ extract() {
         shift
     fi
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
 
@@ -345,7 +345,7 @@ extract() {
     __update_file ${PWD}/${OSM_FULL_FILE_NAME} ${OSRM_DATA_DIR}/${OSM_FULL_FILE_NAME}
 
     echo "Extracting File: ${OSM_FULL_FILE_NAME} with ${VEHICLE_TYPE} ..."
-    docker exec -i -t ${OSRM_DOCKER_ID} osrm-extract \
+    docker exec -i -t ${OSRM_CONTAINER_ID} osrm-extract \
         -p /opt/${VEHICLE_TYPE}.lua \
         /data/${OSM_FULL_FILE_NAME}
     echo "Done."
@@ -376,9 +376,9 @@ partition() {
         shift
     fi
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
 
@@ -392,7 +392,7 @@ partition() {
     fi
 
     echo "Partitionning File:${OSRM_FULL_FILE_NAME} ..."
-    docker exec -i -t ${OSRM_DOCKER_ID} osrm-partition \
+    docker exec -i -t ${OSRM_CONTAINER_ID} osrm-partition \
         /data/${OSRM_FULL_FILE_NAME}
     echo "Done."
 
@@ -422,9 +422,9 @@ customize() {
         shift
     fi
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
 
@@ -437,7 +437,7 @@ customize() {
     fi
 
     echo "Customizing File:${OSRM_FULL_FILE_NAME} ..."
-    docker exec -i -t ${OSRM_DOCKER_ID} osrm-customize \
+    docker exec -i -t ${OSRM_CONTAINER_ID} osrm-customize \
         /data/${OSRM_FULL_FILE_NAME}
     echo "Done."
 
@@ -479,9 +479,9 @@ preprocess() {
 
     RUN_MODE="INDIRECT"
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
 
@@ -575,13 +575,13 @@ routed() {
         shift
     fi
 
-    __get_osrm_docker_id
-    if [ "${OSRM_DOCKER_ID}" == "" ]; then
-        __error_no_docker_found
+    __get_osrm_container_id
+    if [ "${OSRM_CONTAINER_ID}" == "" ]; then
+        __error_no_container_found
         exit 1
     fi
 
-    PARSED_ARGUMENTS=$(getopt -a -n routed -o a: --long algorithm:,max-alternatives:,max-matching-size:,--max-nearest-size:,--max-table-size:,--max-trip-size:--max-viaroute-size -- "$@")
+    PARSED_ARGUMENTS=$(getopt -a -n routed -o a: --long algorithm:,max-alternatives:,max-matching-size:,max-nearest-size:,max-table-size:,max-trip-size:max-viaroute-size -- "$@")
     VALID_ARGUMENTS=$?
     if [ "${VALID_ARGUMENTS}" != "0" ]; then
         usage
@@ -661,7 +661,8 @@ routed() {
     fi
 
     echo "Starting routing engine with max-alternatives = ${MAX_ALTERNATIVES}, max-matching-size = ${MAX_MATCHING_SIZE}, max-nearest-size = ${MAX_NEAREST_SIZE}, max-table-size = ${MAX_TABLE_SIZE}, max-trip-size = ${MAX_TRIP_SIZE}, max-viaroute-size = ${MAX_VIAROUTE_SIZE} and finally algorithm = ${ROUTING_ALGORITHM} ..."
-    docker exec -i -t ${OSRM_DOCKER_ID} osrm-routed \
+
+    docker exec -d -t ${OSRM_CONTAINER_ID} osrm-routed \
         --max-alternatives ${MAX_ALTERNATIVES} \
         --max-matching-size ${MAX_MATCHING_SIZE} \
         --max-nearest-size ${MAX_NEAREST_SIZE} \
@@ -686,12 +687,12 @@ else
     OSRM_DATA_DIR="${OSRM_HOME_DIR}/data"
     echo "Using ${OSRM_DATA_DIR} as OSRM-BACKEND data directory."
     OSRM_CONFIG_FILE="${OSRM_HOME_DIR}/osrm.config"
-    echo "Using ${OSRM_CONFIG_FILE} as OSRM-BACKEND cinfig file."
+    echo "Using ${OSRM_CONFIG_FILE} as OSRM-BACKEND config file."
     if [ ! -d "${OSRM_DATA_DIR}" ]; then
         __update_directory "${OSRM_DATA_DIR}"
         echo "Done."
     fi
-    if [ ! -a "${OSRM_CONFIG_FILE}" ]; then
+    if [ ! -f "${OSRM_CONFIG_FILE}" ]; then
         echo "${OSRM_CONFIG_FILE} does not exist, creating one ..."
         touch "${OSRM_CONFIG_FILE}"
         echo "Done."
