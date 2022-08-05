@@ -350,7 +350,9 @@ extract() {
         /data/${OSM_FULL_FILE_NAME}
     echo "Done."
 
-    exit 0
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        exit 0
+    fi
 
 }
 
@@ -394,7 +396,9 @@ partition() {
         /data/${OSRM_FULL_FILE_NAME}
     echo "Done."
 
-    exit 0
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        exit 0
+    fi
 
 }
 
@@ -437,7 +441,9 @@ customize() {
         /data/${OSRM_FULL_FILE_NAME}
     echo "Done."
 
-    exit 0
+    if [ "${RUN_MODE}" == "DIRECT" ]; then
+        exit 0
+    fi
 
 }
 
@@ -523,6 +529,8 @@ preprocess() {
     partition "${FILE_NAME}.osrm"
     customize "${FILE_NAME}.osrm"
     echo "Done."
+
+    exit 0
 
 }
 
