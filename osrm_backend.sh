@@ -258,12 +258,16 @@ clean_data() {
 
     }
 
+    echo "Cleaning OSRM-BACKEND data directory: ${OSRM_DATA_DIR}."
+
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
     fi
 
     if [ -v OSRM_DATA_DIR ] && [ "${OSRM_DATA_DIR}" != "" ]; then
+        echo "Removing all files in ${OSRM_DATA_DIR} ..."
         rm -r ${OSRM_DATA_DIR}/*
+        echo "Done."
     fi
 
     exit 0
@@ -288,6 +292,8 @@ extract() {
               1  if any error occured"
 
     }
+
+    echo "Extracting given *.osm.pbf file to compatible *.osrm files."
 
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
@@ -338,9 +344,11 @@ extract() {
 
     __update_file ${PWD}/${OSM_FULL_FILE_NAME} ${OSRM_DATA_DIR}/${OSM_FULL_FILE_NAME}
 
+    echo "Extracting File: ${OSM_FULL_FILE_NAME} with ${VEHICLE_TYPE} ..."
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-extract \
         -p /opt/${VEHICLE_TYPE}.lua \
         /data/${OSM_FULL_FILE_NAME}
+    echo "Done."
 
     exit 0
 
@@ -359,6 +367,8 @@ partition() {
               1  if any error occured"
 
     }
+
+    echo "Partitionning given *.osrm.pbf files."
 
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
@@ -379,8 +389,10 @@ partition() {
         exit 1
     fi
 
+    echo "Partitionning File:${OSRM_FULL_FILE_NAME} ..."
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-partition \
         /data/${OSRM_FULL_FILE_NAME}
+    echo "Done."
 
     exit 0
 
@@ -400,6 +412,8 @@ customize() {
 
     }
 
+    echo "Customizing given *.osrm.pbf files."
+
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
     fi
@@ -418,8 +432,10 @@ customize() {
         exit 1
     fi
 
+    echo "Customizing File:${OSRM_FULL_FILE_NAME} ..."
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-customize \
         /data/${OSRM_FULL_FILE_NAME}
+    echo "Done."
 
     exit 0
 
@@ -448,6 +464,8 @@ preprocess() {
               1  if any error occured"
 
     }
+
+    echo "Extracting given *.osm.pbf file to compatible *.osrm files."
 
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
@@ -500,9 +518,11 @@ preprocess() {
         esac
     done
 
+    echo "Begining file preprocessing ..."
     extract -v "${VEHICLE_TYPE}" "${FILE_NAME}.osm.pbf"
     partition "${FILE_NAME}.osrm"
     customize "${FILE_NAME}.osrm"
+    echo "Done."
 
 }
 
@@ -540,6 +560,8 @@ routed() {
               1  if any error occured"
 
     }
+
+    echo "Starting Routing engine."
 
     if [ "${RUN_MODE}" == "DIRECT" ]; then
         shift
@@ -630,6 +652,7 @@ routed() {
         exit 1
     fi
 
+    echo "Starting routing engine with max-alternatives = ${MAX_ALTERNATIVES}, max-matching-size = ${MAX_MATCHING_SIZE}, max-nearest-size = ${MAX_NEAREST_SIZE}, max-table-size = ${MAX_TABLE_SIZE}, max-trip-size = ${MAX_TRIP_SIZE}, max-viaroute-size = ${MAX_VIAROUTE_SIZE} and finally algorithm = ${ROUTING_ALGORITHM} ..."
     docker exec -i -t ${OSRM_DOCKER_ID} osrm-routed \
         --max-alternatives ${MAX_ALTERNATIVES} \
         --max-matching-size ${MAX_MATCHING_SIZE} \
@@ -639,6 +662,7 @@ routed() {
         --max-viaroute-size ${MAX_VIAROUTE_SIZE} \
         --algorithm ${ROUTING_ALGORITHM}\
         /data/${OSRM_FULL_FILE_NAME}
+    echo "Done."
 
     exit 0
 
@@ -650,13 +674,19 @@ if [ ! -v OSRM_HOME_DIR ] || [ "${OSRM_HOME_DIR}" == "" ]; then
     echo "Please define this variable and try again"
     exit 1
 else
+    echo "Using ${OSRM_HOME_DIR} as OSRM-BACKEND home directory."
     OSRM_DATA_DIR="${OSRM_HOME_DIR}/data"
+    echo "Using ${OSRM_DATA_DIR} as OSRM-BACKEND data directory."
     OSRM_CONFIG_FILE="${OSRM_HOME_DIR}/osrm.config"
+    echo "Using ${OSRM_CONFIG_FILE} as OSRM-BACKEND cinfig file."
     if [ ! -d "${OSRM_DATA_DIR}" ]; then
         __update_directory "${OSRM_DATA_DIR}"
+        echo "Done."
     fi
     if [ ! -a "${OSRM_CONFIG_FILE}" ]; then
+        echo "${OSRM_CONFIG_FILE} does not exist, creating one ..."
         touch "${OSRM_CONFIG_FILE}"
+        echo "Done."
     fi
 fi
 OSRM_DOCKER_NAME="osrm/osrm-backend"
